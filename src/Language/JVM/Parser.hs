@@ -54,6 +54,7 @@ module Language.JVM.Parser (
   , methodMaxLocals
   , methodIsNative
   , methodIsAbstract
+  , methodIsFinal
   , methodBody
   , MethodBody(..)
   , methodExceptionTable
@@ -109,7 +110,11 @@ module Language.JVM.Parser (
   , ClassName
   , mkClassName
   , unClassName
+  , constantPool
+  , poolUtf8
+  , ConstantPool
   , ConstantPoolValue(..)
+  , ConstantPoolInfo(..)
   ) where
 
 import Control.Exception (assert)
@@ -953,7 +958,7 @@ data Method = Method {
     methodKey :: MethodKey
   , _visibility :: Visibility
   , methodIsStatic :: Bool
-  , _methodIsFinal :: Bool
+  , methodIsFinal :: Bool
   , _isSynchronized :: Bool
   , _isStrictFp :: Bool
   , methodBody :: MethodBody
