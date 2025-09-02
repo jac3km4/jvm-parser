@@ -26,18 +26,16 @@ Library
 
   Ghc-options:         -Wall
 
-  Build-depends:       ansi-wl-pprint,
-                       array,
+  Build-depends:       array,
                        base       >= 4.0.0.0 && < 5.0.0.0,
                        binary,
                        bytestring,
                        containers,
-                       data-binary-ieee754,
                        fgl,
                        fingertree,
+                       prettyprinter >= 1.7.0,
                        text,
-                       zlib,
-                       pretty
+                       zlib
 
 test-suite test-jvm-parser
   type: exitcode-stdio-1.0

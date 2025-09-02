@@ -50,7 +50,7 @@ import Data.Map (Map)
 import qualified Data.Map as M
 import Data.Maybe
 import Prelude hiding (rem, (<>))
-import Text.PrettyPrint
+import Prettyprinter
 
 import Language.JVM.Common
 
@@ -180,8 +180,10 @@ buildCFG extbl istrm =
                              (isBrInst pc)
                              firstPC lastPC i bbi
     -- instruction sequence fixup & reordering
-    rinsts@((lastPC, _):_) = reverse insts
-    insts@((firstPC, _):_) = map fixup $ filter valid $ assocs istrm
+    lastPC  = headInsts rinsts
+    firstPC = headInsts insts
+    rinsts  = reverse insts
+    insts   = map fixup $ filter valid $ assocs istrm
       where
         valid (_, Just{})  = True
         valid _            = False
@@ -236,11 +238,11 @@ getPostDominators cfg bb = M.findWithDefault [] bb (pdoms cfg)
 data BBId = BBIdEntry | BBIdExit | BBId PC
   deriving (Eq, Ord, Show)
 
-ppBBId :: BBId -> Doc
+ppBBId :: BBId -> Doc ann
 ppBBId bbid = case bbid of
     BBIdEntry    -> "BB%entry"
     BBIdExit     -> "BB%exit"
-    BBId      pc -> "BB%" <> int (fromIntegral pc)
+    BBId      pc -> "BB%" <> pretty pc
 
 instance Enum BBId where
   toEnum 0 = BBIdEntry
@@ -313,8 +315,9 @@ processInst isLeader isBranchInst firstPC lastPC (pc, inst) bbi =
 mkBrTargetMap :: ExceptionTable -> InstructionStream -> Map PC [PC]
 mkBrTargetMap extbl istrm = foldr f M.empty istrm'
   where
-    f (pc, i) acc          = maybe acc (\v -> M.insert pc v acc) $ getBrPCs i
-    istrm'@((firstPC,_):_) = assocs istrm
+    f (pc, i) acc = maybe acc (\v -> M.insert pc v acc) $ getBrPCs i
+    istrm'        = assocs istrm
+    firstPC       = headInsts istrm'
     --
     getBrPCs Nothing  = Nothing
     getBrPCs (Just i) =
@@ -415,8 +418,7 @@ retTargetXfer extbl istrm acc (Just pc, localr) = xfer (lkup pc)
 -- Utility functions
 
 leaderPC :: BasicBlock -> PC
-leaderPC BB{ bbInsts = [] } = error "internal: leaderPC on empty BB"
-leaderPC bb                 = fst . head . bbInsts $ bb
+leaderPC bb = headInsts . bbInsts $ bb
 
 terminatorPC :: BasicBlock -> PC
 terminatorPC BB { bbInsts = [] }    = error "internal: terminatorPC on empty BB"
@@ -450,6 +452,12 @@ ehsForBB extbl bb =
 
 modErr :: String -> a
 modErr msg = error $ "Language.JVM.CFG: " ++ msg
+
+-- | Return the first 'PC' in an 'InstructionStream' association list.
+-- INVARIANT: The list is non-empty.
+headInsts :: [(PC, a)] -> PC
+headInsts ((pc, _):_) = pc
+headInsts [] = error "Unexpected empty instruction stream"
 
 --------------------------------------------------------------------------------
 -- Pretty-printing
